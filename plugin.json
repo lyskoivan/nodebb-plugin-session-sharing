@@ -1,15 +1,36 @@
 {
-	"id": "nodebb-plugin-session-sharing",
-	"url": "https://github.com/NodeBB/nodebb-plugin-session-sharing",
+	"id": "nodebb-plugin-session-sharing-remote",
+	"url": "https://github.com/lyskoivan/nodebb-plugin-session-sharing",
 	"library": "./library.js",
 	"hooks": [
-		{ "hook": "filter:router.page", "method": "addMiddleware" },
-		{ "hook": "static:app.load", "method": "init" },
-		{ "hook": "filter:admin.header.build", "method": "addAdminNavigation" },
-		{ "hook": "static:user.loggedOut", "method": "cleanup" },
-		{ "hook": "filter:config.get", "method": "appendConfig" },
-		{ "hook": "filter:middleware.render", "method": "appendTemplate" },
-		{ "hook": "action:settings.set", "method": "reloadSettings" }
+		{
+			"hook": "filter:router.page",
+			"method": "addMiddleware"
+		},
+		{
+			"hook": "static:app.load",
+			"method": "init"
+		},
+		{
+			"hook": "filter:admin.header.build",
+			"method": "addAdminNavigation"
+		},
+		{
+			"hook": "static:user.loggedOut",
+			"method": "cleanup"
+		},
+		{
+			"hook": "filter:config.get",
+			"method": "appendConfig"
+		},
+		{
+			"hook": "filter:middleware.render",
+			"method": "appendTemplate"
+		},
+		{
+			"hook": "action:settings.set",
+			"method": "reloadSettings"
+		}
 	],
 	"less": [
 		"static/style.less"

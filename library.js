@@ -53,6 +53,8 @@ var plugin = {
 	},
 };
 
+var mainResUid = null;
+
 payloadKeys.forEach(function (key) {
 	plugin.settings['payload:' + key] = key;
 });
@@ -151,7 +153,25 @@ plugin.process = function (token, callback) {
 	], callback);
 };
 
-plugin.normalizePayload = function (payload, callback) {
+plugin.normalizePayload = async function (payload, callback) {
+	var currentUserEmail = '';
+
+	const userEmail = await user.getUserFields(mainResUid, ['email']);
+
+	if (mainResUid) {
+		currentUserEmail = userEmail.email;
+	}
+
+	if (currentUserEmail && payload.email !== currentUserEmail) {
+		currentUserEmail = payload.email;
+		mainResUid = null;
+		return callback(new Error('hasSession'));
+	}
+
+	if (payload.email === currentUserEmail) {
+		return callback(new Error('payload-invalid'));
+	}
+
 	var userData = {};
 
 	if (plugin.settings.payloadParent) {
@@ -416,9 +436,17 @@ plugin.addMiddleware = function (req, res, next) {
 	var hasSession = req.hasOwnProperty('user') && req.user.hasOwnProperty('uid') && parseInt(req.user.uid, 10) > 0;
 	var hasLoginLock = req.session.hasOwnProperty('loginLock');
 
+	if (req.user) {
+		mainResUid = parseInt(req.user.uid, 10);
+	}
+
+	if (!req.user && mainResUid) {
+		mainResUid = null;
+	}
+
 	if (
 		!plugin.ready ||	// plugin not ready
-		(plugin.settings.behaviour === 'trust' && hasSession) ||	// user logged in + "trust" behaviour
+		// (plugin.settings.behaviour === 'trust' && hasSession) ||	// user logged in + "trust" behaviour
 		(plugin.settings.behaviour === 'revalidate' && hasLoginLock) ||
 		req.originalUrl.startsWith(nconf.get('relative_path') + '/api')	// api routes
 	) {
@@ -427,6 +455,7 @@ plugin.addMiddleware = function (req, res, next) {
 
 		return next();
 	}
+
 	// Hook into ip blacklist functionality in core
 	meta.blacklist.test(req.ip, function (err) {
 		if (err) {
@@ -444,23 +473,27 @@ plugin.addMiddleware = function (req, res, next) {
 					var handleAsGuest = false;
 
 					switch (err.message) {
-					case 'banned':
-						winston.info('[session-sharing] uid ' + uid + ' is banned, not logging them in');
-						req.session.sessionSharing = {
-							banned: true,
-							uid: uid,
-						};
-						break;
-					case 'payload-invalid':
-						winston.warn('[session-sharing] The passed-in payload was invalid and could not be processed');
-						break;
-					case 'no-match':
-						winston.info('[session-sharing] Payload valid, but local account not found.  Assuming guest.');
-						handleAsGuest = true;
-						break;
-					default:
-						winston.warn('[session-sharing] Error encountered while parsing token: ' + err.message);
-						break;
+						case 'banned':
+							winston.info('[session-sharing] uid ' + uid + ' is banned, not logging them in');
+							req.session.sessionSharing = {
+								banned: true,
+								uid: uid,
+							};
+							break;
+						case 'hasSession':
+							req.logout();
+							res.locals.fullRefresh = true;
+							break;
+						case 'payload-invalid':
+							winston.warn('[session-sharing] The passed-in payload was invalid and could not be processed');
+							break;
+						case 'no-match':
+							winston.info('[session-sharing] Payload valid, but local account not found.  Assuming guest.');
+							handleAsGuest = true;
+							break;
+						default:
+							winston.warn('[session-sharing] Error encountered while parsing token: ' + err.message);
+							break;
 					}
 
 					return plugins.fireHook('filter:sessionSharing.error', {

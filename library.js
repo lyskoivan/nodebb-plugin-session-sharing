@@ -30,6 +30,7 @@ var profileFields = [
 	'birthday',
 	'signature',
 	'aboutme',
+	'leadership'
 ];
 var payloadKeys = profileFields.concat([
 	'id', // the uniq identifier of that account
@@ -37,6 +38,7 @@ var payloadKeys = profileFields.concat([
 	'lastName', // dto.
 	'picture',
 	'groups',
+	'leadership',
 ]);
 
 var plugin = {
@@ -299,9 +301,9 @@ plugin.updateUserProfile = function (uid, userData, isNewUser, callback) {
 	winston.debug('consider updateProfile?', isNewUser || plugin.settings.updateProfile === 'on');
 
 	/* even update the profile on a new account, since some fields are not initialized by NodeBB */
-	if (!isNewUser && plugin.settings.updateProfile !== 'on') {
-		return setImmediate(callback, null, uid, userData, isNewUser);
-	}
+	// if (!isNewUser && plugin.settings.updateProfile !== 'on') {
+	// 	return setImmediate(callback, null, uid, userData, isNewUser);
+	// }
 
 	async.waterfall([
 		function (next) {

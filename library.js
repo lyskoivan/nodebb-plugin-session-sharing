@@ -204,8 +204,7 @@ plugin.normalizePayload = async function (payload, callback) {
   // add here your new field
   const isUpdateFields =
     (payload.email && payload.email !== userFields.email) ||
-    (payload.leadership && payload.leadership !== userFields.leadership) ||
-    (payload.username && payload.username !== userFields.username);
+    (payload.leadership && payload.leadership !== userFields.leadership);
 
   if (payload.email === currentUserEmail && !isUpdateFields) {
     return callback(new Error("payload-invalid"));
